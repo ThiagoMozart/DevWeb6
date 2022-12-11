@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+
+{% block titulo %}
+    Venda de produtos
+{% endblock %}
+
+{% block estilo %}
+
+{% endblock %}
+
+{% block corpo %}
+    <br>
+
+    <div id="form">
+
+    </div>
+    <br>
+    <div id="tabela">
+
+    </div>
+    <br>
+    <br>
+    <br>
+{% endblock %}
+
+{% block domready %}
+    $.get("{% url 'produto:cadastra_produto' %}", function (resposta) {
+        $("#form").html(resposta)
+    })
+
+    $.get("{% url 'produto:lista_produtos' %}", function (resposta) {
+        $("#tabela").html(resposta)
+    })
+
+<!--    Atualiza com método ajax a tabela, com o novo preco total-->
+    $("#tabela").on("blur", "input", function() {
+        let valor = $(this).val()
+        if(valor < 1 || valor > 99) {
+            $(this).focus()
+            return
+        }
+        let form = $(this).parent()
+        let url = form.attr("action")
+        let formData = form.serializeArray()
+        $.post(url, formData, function(resposta) {
+            $(".preco-total").text(resposta.preco_total)
+        })
+    })
+
+    $("#tabela").on("click", ".remover", function() {
+        let form = $(this).parent()
+        let url = form.attr("action")
+        let tr = form.parent().parent()
+        let formData = form.serializeArray()
+        $.post(url, formData, function(resposta){
+            tr.fadeTo('slow', 0.3, function() {
+                $(this).remove()
+                $(".preco-total").text(resposta.preco_total)
+            })
+        })
+    })
+
+    $("#form").on("click", ".adicionar", function() {
+        let form = $("#form").children()
+        let tr = form.parent().parent()
+        let url = form.attr("action")
+        let formData = form.serializeArray()
+        $.post(url, formData, function(resposta){
+            $(".preco-total").text(resposta.preco_total)
+            $(`
+                <tr>
+                     <td class="text-center align-middle">
+                        ${ resposta.categoria.nome }
+                     </td>
+                     <td class="align-middle">
+                           ${ resposta.novoProduto.nome }
+                     </td>
+                     <td class="text-right align-middle pr-3">
+                        <form class="mx-auto" onkeydown="return event.key != 'Enter';" style="width: auto" action="{% url 'produto:atualiza_produtos' %}" method="POST" novalidate>
+                            <input type="hidden" value=${ resposta.novoProduto.id } name="id"/>
+                            <input type="text" value=${ resposta.novoProduto.qtd } name="qtd"/>
+                        </form>
+                     </td>
+                     <td class="text-right align-middle pr-3">
+                        ${ resposta.novoProduto.preco }
+                     </td>
+                     <td class="text-right align-middle pr-3">
+                        <form onkeydown="return event.key != 'Enter';" action="{% url 'produto:deleta_produto' %}" method="POST" novalidate>
+                            <input type="hidden" value=${ resposta.novoProduto.id } name="id" />
+                           <button type="button" class="btn btn-sm btn-danger remover" tabindex="-1">Remover</button>
+                        </form>
+                     </td>
+                  </tr>
+            `).insertBefore($("#ultimoTr"))
+        })
+    })
+
+{% endblock %}
